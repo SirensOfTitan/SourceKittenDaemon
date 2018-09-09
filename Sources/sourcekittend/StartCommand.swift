@@ -27,7 +27,17 @@ struct StartCommand: CommandProtocol {
         }
 
         do {
-            let type = ProjectType.project(project: options.project)
+            let type: ProjectType
+            switch  (options.project.isEmpty, options.workspace.isEmpty) {
+            case (true, false):
+              type = ProjectType.project(project: options.project)
+            case (false, true):
+              type = ProjectType.workspace(workspace: options.workspace)
+            default:
+              return .failure(CommandError.invalidArgument(description: "Must provide existant xcworkspace or xcproj file."))
+            }
+          
+          
             let project = try Project(
               type: type,
               scheme: options.scheme.isEmpty ? nil : options.scheme,
@@ -52,19 +62,22 @@ struct StartCommand: CommandProtocol {
 struct StartOptions: OptionsProtocol {
 
     let project: String
+    let workspace: String
     let scheme: String
     let target: String
     let configuration: String
     let port: Int
 
-    static func create(project: String) -> (String) -> (String) -> (String) -> (Int) -> StartOptions {
-        return { scheme in { target in { configuration in { port in
+  
+    static func create(project: String) -> (String) -> (String) -> (String) -> (String) -> (Int) -> StartOptions {
+          return { workspace in { scheme in { target in { configuration in { port in
             return self.init(project: project,
+                             workspace: workspace,
                              scheme: scheme,
                              target: target,
                              configuration: configuration,
                              port: port)
-            }}}}
+          }}}}}
     }
 
     static func evaluate(_ m: CommandMode) -> Result<StartOptions, CommandantError<CommandError>> {
@@ -72,6 +85,10 @@ struct StartOptions: OptionsProtocol {
             <*> m <| Option(key: "project",
                             defaultValue: "",
                             usage: "Xcode project to run on")
+          
+            <*> m <| Option(key: "workspace",
+                            defaultValue: "",
+                            usage: "Xcode workspace to run on")
 
             <*> m <| Option(key: "scheme",
                             defaultValue: "",
