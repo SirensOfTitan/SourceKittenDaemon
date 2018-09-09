@@ -21,11 +21,6 @@ struct StartCommand: CommandProtocol {
     let function = "Start the completion server"
 
     func run(_ options: StartOptions) -> Result<(), CommandError> {
-        if options.project.isEmpty {
-            return .failure(.invalidArgument(
-                description: "Please provide a project"))
-        }
-
         do {
             let type: ProjectType
             switch  (options.project.isEmpty, options.workspace.isEmpty) {
